@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f2f0ea">
+  <script>
+    // Safety release: a missing script must never leave a permanent dark screen.
+    setTimeout(() => {
+      if (!window.MyRateReady) {
+        document.documentElement.classList.remove('intro-pending');
+        const intro = document.getElementById('introScreen');
+        if (intro) intro.classList.add('hidden');
+      }
+    }, 10000);
+    document.documentElement.classList.add('intro-pending');
+    document.querySelector('meta[name="theme-color"]').content = '#10100f';
+  </script>
+  <meta name="description" content="My Rate переводит стоимость вещей и планов в твоё рабочее время.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="MyRate">
+  <title>My Rate — ВРЕМЯ — деньги · Какую цену платишь именно ТЫ?</title>
+  <link rel="icon" type="image/svg+xml" href="myrate-icon.svg?v=3.1.3.4">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=3.1.3.4">
+  <link rel="manifest" href="manifest.webmanifest?v=3.1.3.4">
+  <link rel="stylesheet" href="styles.css?v=3.1.3.4">
+</head>
+<body>
+  <div id="introScreen" class="intro-screen hidden" aria-live="polite" aria-label="MyRate. цифровой Арт объект. A PROBA experience. No doubt. Just PROBA.">
+    <div id="introTitle" class="intro-title"><span class="intro-logo"><span class="intro-logo-my">My</span>Rate</span></div>
+    <div class="intro-brand"><span class="intro-object">цифровой Арт объект</span><span class="intro-experience">A PROBA experience</span><strong>No doubt. Just <b>PROBA.</b></strong></div>
+  </div>
+  <main class="app" id="app">
+    <header class="topbar">
+      <div>
+        <div class="brand">MY RATE</div>
+        <h1 id="mainTitle"><span class="headline-expression"><span class="headline-time">ВРЕМЯ</span> — деньги</span> <span class="headline-question">Какую цену платишь<br> именно <span class="wide-word">ТЫ?</span></span></h1>
+      </div>
+      <button id="settingsButton" class="icon-button settings-button" aria-label="Настройки" title="Настройки"><span data-icon="gear"></span></button>
+    </header>
+
+    <section id="screenCurrent" class="screen active" aria-labelledby="currentHeading">
+      <h2 id="currentHeading" class="screen-title">Хочу — могу?</h2>
+      <section id="welcome" class="surface welcome-panel">
+        <div class="kicker">Знакомимся с MyRate</div>
+        <h3>Ценник умеет притворяться</h3>
+        <p>MyRate переводит стоимость вещей в твоё рабочее время. Настрой свой ритм — и посмотрим, что скрывается за ценником. Инструкция «Как это работает?» покажет всё на примерах.</p>
+        <button id="startSetup" class="button primary wide" type="button">Настроить свою математику</button>
+        <button id="skipTourIntro" class="button secondary wide welcome-skip" type="button">Как это работает?</button>
+      </section>
+      <button id="quickProfile" class="button secondary rhythm-link hidden" type="button"><span data-icon="gear"></span>Подкрутить мой ритм</button>
+      <section id="profileEditor" class="surface compact-form hidden">
+        <button id="profileBack" class="back-button" type="button">← Назад</button><div class="section-heading"><div><div class="kicker">Сначала настроим ритм</div><h3>Мой рабочий ритм</h3></div></div>
+        <div class="field-block">
+          <div class="label-row"><label for="income">Какой суммой играем?</label><button class="help-button" type="button" data-help="income" aria-label="Подсказка: какой суммой играем">?</button></div>
+          <input id="income" class="number-input" inputmode="decimal" autocomplete="off" placeholder="Например, 150 000" data-number="decimal" data-min="0.01" data-max="1000000000000" required aria-required="true">
+        </div>
+        <div id="rhythmChoice" class="two-columns">
+          <div class="field-block"><div class="label-row wheel-field-label"><span>В какой валюте?</span><button class="help-button" type="button" data-help="incomeCurrency" aria-label="Подсказка: валюта">?</button></div><div class="wheel" data-wheel="incomeCurrency" aria-label="Валюта исходной суммы"></div></div>
+          <div class="field-block"><div class="label-row wheel-field-label"><span>За какой период?</span><button class="help-button" type="button" data-help="period" aria-label="Подсказка: период">?</button></div><div class="wheel" data-wheel="period" aria-label="Период исходной суммы"></div></div>
+        </div>
+        <div id="rhythmSchedule" class="two-columns">
+          <div class="field-block"><div class="label-row"><label for="days">Рабочих дней в неделю</label><button class="help-button" type="button" data-help="days" aria-label="Подсказка: рабочие дни">?</button></div><input id="days" class="number-input" inputmode="decimal" autocomplete="off" value="5" data-number="decimal" data-min="0.5" data-max="7" required aria-required="true"></div>
+          <div class="field-block"><div class="label-row"><label for="hours">Часов в рабочем дне</label><button class="help-button" type="button" data-help="hours" aria-label="Подсказка: рабочие часы">?</button></div><input id="hours" class="number-input" inputmode="decimal" autocomplete="off" value="8" data-number="decimal" data-min="0.25" data-max="24" required aria-required="true"></div>
+        </div>
+        <p id="profilePrivacy" class="privacy-note"></p>
+        <button id="saveProfile" class="button primary wide" type="button" disabled>Всё, считаем</button>
+      </section>
+
+      <section id="converter" class="hidden">
+        <div id="firstWishGuide" class="intro-guide hidden"><h3>Теперь закинь хотелку</h3><p>Напиши, что присмотрел, покажи ценник — остальное провернут наши воображаемые механизмы.</p></div>
+        <section id="wishForm" class="surface compact-form">
+          <div class="section-heading"><div><div class="kicker">Новая карточка</div><h3>Добавим хотелку</h3></div></div>
+          <div class="field-block"><div class="label-row"><label for="itemName">На что запал глаз?</label><button class="help-button" type="button" data-help="itemName" aria-label="Подсказка: название">?</button></div><input id="itemName" maxlength="80" autocomplete="off" placeholder="Например, iPhone duo" required aria-required="true"></div>
+          <div id="wishDetails" class="price-grid">
+            <div class="field-block"><div class="label-row"><label for="itemPrice">Что на ценнике?</label><button class="help-button" type="button" data-help="itemPrice" aria-label="Подсказка: цена">?</button></div><input id="itemPrice" class="number-input" inputmode="decimal" autocomplete="off" placeholder="2 000" data-number="decimal" data-min="0.01" data-max="1000000000000000" required aria-required="true"></div>
+            <div class="field-block"><div class="label-row wheel-field-label"><span>Валюта</span></div><div class="wheel" data-wheel="itemCurrency" aria-label="Валюта цены"></div></div>
+            <div class="field-block quantity-field"><div class="label-row"><label for="itemQty">Количество</label><button class="help-button" type="button" data-help="quantity" aria-label="Подсказка: количество">?</button></div><input id="itemQty" class="number-input" inputmode="decimal" autocomplete="off" placeholder="1" data-number="decimal" data-min="0.01" data-max="1000000" required aria-required="true"></div>
+          </div>
+          <button id="addItem" class="button primary wide" type="button" disabled>Добавить</button>
+          <div id="fxStatus" class="status-line" aria-live="polite"></div>
+        </section>
+
+        <section class="surface list-surface">
+          <div class="section-heading sticky-heading"><div><div class="kicker">Сейчас считаем</div><h3 id="currentTitle">Пока пусто</h3></div><button id="clearItems" class="text-button danger hidden" type="button">Очистить</button></div>
+          <div id="currentUnitPicker" class="field-block result-wheel-block hidden"><div class="label-row wheel-field-label centered"><span>Показать стоимость в…</span><button class="help-button" type="button" data-help="unit" aria-label="Подсказка: единицы результата">?</button></div><div class="wheel unit-wheel" data-wheel="unit" aria-label="Единицы результата"></div></div>
+          <div id="itemsList" class="items-list"></div>
+        </section>
+        <section id="totalCard" class="surface total-card hidden"><div class="total-label">Всё вместе стоит тебе</div><div id="totalValue" class="total-number">—</div><div id="totalMoney" class="total-meta"></div></section>
+        <div id="multipleHint" class="inline-hint hidden" role="status"><strong>Ого. Кажется, намечается Большой план.</strong><span>Можно оставить всё вместе, разложить по карточкам или сразу собрать план.</span></div>
+        <button id="saveCalculation" class="button primary bookmark-button wide hidden" type="button">Добавить в избранное</button>
+      </section>
+    </section>
+
+    <section id="screenFavorites" class="screen" aria-labelledby="favoritesHeading">
+      <div class="page-heading-row"><div><div class="kicker">То, что не хочется терять</div><h2 id="favoritesHeading" class="screen-title">Избранное</h2></div><button class="icon-button" type="button" data-open-archive="calculations" aria-label="Открыть Архив"><span data-icon="archive"></span></button></div>
+      <div id="favoritesListView"><div id="favoritesToolbar" class="toolbar"><button type="button" class="button secondary small-button" data-section-menu="Favorites" aria-label="Меню Избранного"><span data-icon="more"></span>Действия</button><button id="clearFavorites" class="text-button danger hidden" type="button">Удалить всё</button></div><div id="favoritesList" class="card-list"></div></div>
+      <div id="favoriteDetailView" class="hidden">
+        <div class="detail-toolbar"><button id="favoriteBack" class="back-button" type="button">← Назад</button><button id="favoriteDetailMenu" class="dots-button" type="button" aria-label="Действия с карточкой">•••</button></div>
+        <section class="surface detail-surface"><div class="kicker" id="favoriteDetailMeta"></div><h3 id="favoriteDetailTitle" class="detail-title">—</h3><div class="field-block result-wheel-block"><div class="label-row wheel-field-label centered"><span>Показать стоимость в…</span></div><div class="wheel unit-wheel" data-wheel="favoriteUnit" aria-label="Единицы результата сохранённой карточки"></div></div><div id="favoriteDetailItems" class="items-list"></div></section>
+        <section id="favoriteDetailTotalCard" class="surface total-card hidden"><div class="total-label">Всё вместе стоит тебе</div><div id="favoriteDetailTotal" class="total-number">—</div><div id="favoriteDetailMoney" class="total-meta"></div></section>
+      </div>
+    </section>
+
+    <section id="screenProjects" class="screen" aria-labelledby="projectsHeading">
+      <div class="page-heading-row"><div><div class="kicker">Когда одной карточкой не обойтись</div><h2 id="projectsHeading" class="screen-title">Большие планы</h2></div><button class="icon-button" type="button" data-open-archive="projects" aria-label="Открыть Архив"><span data-icon="archive"></span></button></div>
+      <div id="projectsListView"><div id="projectsToolbar" class="toolbar"><button type="button" class="button secondary small-button" data-section-menu="Projects" aria-label="Меню Больших планов"><span data-icon="more"></span>Действия</button><button id="clearProjects" class="text-button danger hidden" type="button">Удалить всё</button></div><div id="projectsList" class="card-list"></div></div>
+      <div id="projectDetailView" class="hidden">
+        <div class="detail-toolbar"><button id="projectBack" class="back-button" type="button">← Назад</button><button id="projectDetailMenu" class="dots-button" type="button" aria-label="Действия с большим планом">•••</button></div>
+        <section class="surface detail-surface"><div class="kicker" id="projectDetailMeta"></div><h3 id="projectDetailTitle" class="detail-title">—</h3><div class="field-block result-wheel-block"><div class="label-row wheel-field-label centered"><span>Показать стоимость в…</span></div><div class="wheel unit-wheel" data-wheel="projectUnit" aria-label="Единицы результата большого плана"></div></div><div id="projectDetailGroups"></div></section>
+        <section id="projectDetailTotalCard" class="surface total-card hidden"><div class="total-label">Всё вместе стоит тебе</div><div id="projectDetailTotal" class="total-number">—</div><div id="projectDetailMoney" class="total-meta"></div></section>
+      </div>
+    </section>
+
+    <section id="screenArchive" class="screen" aria-labelledby="archiveHeading">
+      <div class="detail-toolbar top-detail-toolbar"><button id="archiveBack" class="back-button" type="button">← Назад</button></div><div class="kicker">Не удалено, просто отдыхает</div><h2 id="archiveHeading" class="screen-title">Архив</h2>
+      <div class="segment" role="tablist" aria-label="Раздел Архива"><button class="segment-button active" type="button" data-archive-tab="calculations" role="tab">Карточки</button><button class="segment-button" type="button" data-archive-tab="projects" role="tab">Большие планы</button></div><div id="archiveList" class="card-list"></div>
+    </section>
+
+    <section id="screenSettings" class="screen" aria-labelledby="settingsHeading">
+      <div class="detail-toolbar top-detail-toolbar"><button id="settingsBack" class="back-button" type="button">← Назад</button></div><div class="kicker">Тихая комната с рычагами</div><h2 id="settingsHeading" class="screen-title">Настройки</h2>
+      <section class="surface settings-list">
+        <button id="editProfile" class="settings-row" type="button"><span><strong>Подкрутить мой рабочий ритм</strong><small>Сумма, период и рабочий график</small></span><span>›</span></button>
+        <button id="restartTour" class="settings-row" type="button"><span><strong>Пройти знакомство заново</strong><small>Семь коротких историй с примерами</small></span><span>›</span></button>
+        <label class="settings-row toggle-row"><span><strong>Магия пересчёта</strong><small>Пауза, движение и мягкое появление</small></span><input id="magicToggle" type="checkbox" checked><span class="toggle" aria-hidden="true"></span></label>
+        <label class="settings-row toggle-row"><span><strong>Шутки и реплики</strong><small>Чтобы цифры не становились слишком важными</small></span><input id="jokesToggle" type="checkbox" checked><span class="toggle" aria-hidden="true"></span></label>
+        <button id="updateAllFx" class="settings-row" type="button"><span><strong>Обновить курсы во всём приложении</strong><small>Только после подтверждения</small></span><span>›</span></button>
+        <button class="settings-row" type="button" data-open-archive="calculations"><span><strong>Архив</strong><small>Карточки и большие планы на паузе</small></span><span>›</span></button>
+        <button id="openFaq" class="settings-row" type="button"><span><strong>Что за магия?</strong><small>Как всё считается и где остаются данные</small></span><span>›</span></button>
+      </section>
+    </section>
+
+    <section id="screenFaq" class="screen" aria-labelledby="faqHeading">
+      <div class="detail-toolbar top-detail-toolbar"><button id="faqBack" class="back-button" type="button">← Назад</button></div><div class="kicker">Ответы без бюрократии</div><h2 id="faqHeading" class="screen-title">Что за магия?</h2><div class="faq-story-actions"><button id="faqMeaning" class="button primary wide" type="button">Философия проекта MyRate</button><button id="faqStories" class="button secondary wide" type="button">Как это работает?</button></div><div id="faqContent" class="faq-list"></div>
+      <footer class="proba-footer"><div>A PROBA experience</div><strong>No doubt. Just <span>PROBA.</span></strong></footer>
+    </section>
+
+    <footer id="appFooter" class="app-footer"><div>A PROBA experience</div><strong>No doubt. Just <span>PROBA.</span></strong></footer>
+  </main>
+
+  <div id="bottomNav" class="bottom-dock hidden">
+    <nav id="navCapsule" class="bottom-nav" aria-label="Главные разделы">
+      <div id="navIndicator" class="nav-indicator" aria-hidden="true"></div>
+      <button class="nav-button active" type="button" data-screen="Current" aria-current="page"><span data-icon="wish"></span><b>Хочу — могу?</b></button>
+      <button class="nav-button" type="button" data-screen="Favorites"><span data-icon="bookmark"></span><b>Избранное</b></button>
+      <button class="nav-button" type="button" data-screen="Projects"><span data-icon="plan"></span><b>Большие планы</b></button>
+    </nav>
+    <button id="searchButton" class="search-button" type="button" aria-label="Поиск по MyRate"><span data-icon="search"></span></button>
+  </div>
+  <div id="selectionHint" class="selection-hint hidden" aria-live="polite">Выбери ещё хотя бы одну — и можно собрать большой план.</div>
+  <div id="selectionBar" class="selection-bar hidden"><div class="selection-bar-copy"><span id="selectionBarCount">Выбрано: 0</span><small>Карточки готовы объединиться</small></div><div class="selection-bar-actions"><button id="cancelSelection" class="button secondary" type="button">Отмена</button><button id="combineSelected" class="button primary" type="button">Объединить выбранные</button></div></div>
+  <div id="searchLayer" class="search-layer hidden">
+    <section class="search-panel" role="dialog" aria-modal="true" aria-labelledby="searchHeading">
+      <div class="search-top"><h2 id="searchHeading">Куда это запропастилось?</h2><button id="closeSearch" class="icon-button" type="button" aria-label="Закрыть поиск"><span data-icon="close"></span></button></div>
+      <label class="sr-only" for="searchInput">Название карточки, хотелки или плана</label>
+      <input id="searchInput" type="search" maxlength="120" autocomplete="off" placeholder="Название карточки, хотелки или плана">
+      <p id="searchPrivacy" class="privacy-note">Ищем в «Избранном», Больших планах и Архиве. Только на этом устройстве.</p>
+      <div class="search-filters" aria-label="Где искать">
+        <button type="button" class="filter-button active" data-search-filter="all" aria-pressed="true">Везде</button>
+        <button type="button" class="filter-button" data-search-filter="favorites" aria-pressed="false">Избранное</button>
+        <button type="button" class="filter-button" data-search-filter="projects" aria-pressed="false">Большие планы</button>
+        <button type="button" class="filter-button" data-search-filter="archive" aria-pressed="false">Архив</button>
+      </div>
+      <div id="searchStatus" class="privacy-note" role="status"></div>
+      <div id="searchResults"></div>
+    </section>
+  </div>
+  <div id="helpPopover" class="help-popover hidden" role="tooltip"></div>
+  <div id="magicOverlay" class="magic-overlay hidden" aria-live="polite"><div class="magic-bubble"><div class="magic-dots" aria-hidden="true"><i></i><i></i><i></i></div><div id="magicText">Секунду. Цифры совещаются.</div></div></div>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  <div id="storyLayer" class="story-layer hidden" role="dialog" aria-modal="true" aria-labelledby="storyTitle">
+    <section class="story-panel">
+      <header class="story-header"><div id="storyProgress" class="story-progress" aria-hidden="true"></div><div class="story-top"><span id="storyCount"></span><span>Как это работает?</span><button id="storyClose" class="icon-button" aria-label="Закрыть инструкцию" type="button">×</button></div></header>
+      <div id="storyBody" class="story-body"><div class="story-copy" aria-live="polite"><h2 id="storyTitle"></h2><p id="storyText"></p></div><div class="story-demo"><div class="kicker">Демонстрационный пример</div><div id="storyExample"></div><p id="storyNote"></p></div></div>
+      <footer class="story-footer"><p id="storyHint"></p><div class="story-actions"><button id="storyPrevious" class="button secondary" type="button">Назад</button><button id="storyNext" class="button primary" type="button">Дальше</button></div></footer>
+    </section>
+  </div>
+  <div id="meaningLayer" class="meaning-layer hidden" role="dialog" aria-modal="true" aria-labelledby="meaningTitle">
+    <section class="meaning-panel">
+      <header class="meaning-header"><div id="meaningProgress" class="meaning-progress" aria-hidden="true"></div><div class="meaning-top"><span id="meaningCount"></span><span>Второй ценник</span><button id="meaningClose" class="icon-button" aria-label="Закрыть историю" type="button">×</button></div></header>
+      <div id="meaningBody" class="meaning-body"><div id="meaningVisual" class="meaning-visual" data-scene="price" aria-hidden="true"><div class="meaning-price-pair"><div class="meaning-tag meaning-tag-time"><span class="meaning-tag-hole"></span><strong>10 часов работы</strong></div><div class="meaning-tag meaning-tag-money"><span class="meaning-tag-hole"></span><strong>8 000 ₽</strong></div></div></div><div class="meaning-copy" aria-live="polite"><h2 id="meaningTitle"></h2><p id="meaningText"></p><p id="meaningFinalText" class="meaning-final-text hidden"></p></div><div id="meaningBrand" class="meaning-brand hidden">A PROBA EXPERIENCE</div></div>
+      <footer class="meaning-footer"><p id="meaningHint" class="meaning-hint"></p><div id="meaningStandardActions" class="meaning-actions"><button id="meaningPrevious" class="button secondary" type="button">Назад</button><button id="meaningNext" class="button primary" type="button">Дальше</button></div><div id="meaningFinalActions" class="meaning-final-actions hidden"><button id="meaningLearn" class="button primary wide" type="button">Показать, как это работает</button><button id="meaningTry" class="button secondary wide" type="button">Попробовать самому</button><button id="meaningFinalBack" class="meaning-back" type="button">← Назад</button></div></footer>
+    </section>
+  </div>
+  <div id="dialogLayer" class="dialog-layer hidden" role="presentation"><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialogTitle"><button id="dialogClose" class="dialog-close" type="button" aria-label="Закрыть">×</button><h3 id="dialogTitle"></h3><div id="dialogText" class="dialog-text"></div><div id="dialogBody"></div><div id="dialogActions" class="dialog-actions"></div></section></div>
+  <div id="sheetLayer" class="sheet-layer hidden" role="presentation"><section class="action-sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle"><h3 id="sheetTitle"></h3><div id="sheetActions" class="sheet-actions"></div><button id="sheetCancel" class="sheet-cancel" type="button">Отмена</button></section></div>
+  <script src="config.js?v=3.1.3.4"></script><script src="storage.js?v=3.1.3.4"></script><script src="calculator.js?v=3.1.3.4"></script><script src="collections.js?v=3.1.3.4"></script><script src="interface.js?v=3.1.3.4"></script><script src="app.js?v=3.1.3.4"></script>
+</body>
+</html>
