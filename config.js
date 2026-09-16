@@ -1,6 +1,6 @@
 window.MyRateConfig = Object.freeze({
   appName: 'My Rate',
-  version: '3.1.3.5',
+  version: '3.1.3.6',
   meaningVersion: 1,
   weeksPerYear: 52,
   monthsPerYear: 12,
