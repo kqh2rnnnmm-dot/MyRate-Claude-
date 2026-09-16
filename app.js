@@ -847,74 +847,29 @@ runIntro('launch');
 window.MyRateReady=true;
 if(S.warning)setTimeout(()=>toast(S.warning),6500);
 
-/* A gentle repeating hint on every visit to a long, unscrolled screen; any user interaction cancels it. */
+/* A single gentle hint after content changes; any user interaction cancels it. */
 function setupScrollHints(){
- const BOUNCES=4,PAUSE_MS=1100,BOUNCE_MS=1300,DELAY_MS=1800;
- let timer=0,loopTimer=0;
+ let timer=0,finishTimer=0;
  const shown=new Set();
  const active=()=>document.querySelector('.screen.active');
- const stop=(remember=false)=>{clearTimeout(timer);clearTimeout(loopTimer);const screen=active();if(screen){screen.classList.remove('scroll-cue');if(remember)shown.add(screen.id);}};
- const bounce=(screen,left)=>{
-  if(left<=0||!screen.classList.contains('active'))return;
-  screen.classList.remove('scroll-cue');void screen.offsetWidth;screen.classList.add('scroll-cue');
-  loopTimer=setTimeout(()=>{
-   screen.classList.remove('scroll-cue');
-   loopTimer=setTimeout(()=>bounce(screen,left-1),PAUSE_MS);
-  },BOUNCE_MS);
- };
+ const cancel=(remember=false)=>{clearTimeout(timer);clearTimeout(finishTimer);const screen=active();if(screen){screen.classList.remove('scroll-cue');if(remember)shown.add(screen.id);}};
  const schedule=()=>{
-  stop();const screen=active();if(!screen||shown.has(screen.id))return;
+  cancel();const screen=active();if(!screen||shown.has(screen.id))return;
   timer=setTimeout(()=>{
    if(document.hidden||introActive||storyRelease||meaningRelease||searchRelease||document.body.classList.contains('modal-open')||document.body.classList.contains('keyboard-open'))return;
    const visibleBottom=(window.visualViewport?.offsetTop||0)+(window.visualViewport?.height||innerHeight);
    if(screen.getBoundingClientRect().bottom<=visibleBottom+48)return;
-   shown.add(screen.id);bounce(screen,BOUNCES);
-  },DELAY_MS);
+   shown.add(screen.id);screen.classList.remove('scroll-cue');void screen.offsetWidth;screen.classList.add('scroll-cue');
+   finishTimer=setTimeout(()=>screen.classList.remove('scroll-cue'),1350);
+  },1800);
  };
- ['touchstart','pointerdown','wheel','keydown'].forEach(name=>document.addEventListener(name,()=>stop(true),{passive:true}));
- addEventListener('scroll',()=>stop(true),{passive:true});
+ ['touchstart','pointerdown','wheel','keydown'].forEach(name=>document.addEventListener(name,()=>cancel(true),{passive:true}));
+ addEventListener('scroll',()=>cancel(true),{passive:true});
  const observer=new MutationObserver(schedule);
  document.querySelectorAll('.screen').forEach(el=>observer.observe(el,{childList:true,subtree:true,characterData:true}));
- const screens=new MutationObserver(records=>{
-  let toggled=false;
-  records.forEach(r=>{
-   const wasActive=(r.oldValue||'').split(' ').includes('active'),isActive=r.target.classList.contains('active');
-   if(isActive===wasActive)return;
-   toggled=true;
-   if(isActive)shown.delete(r.target.id);
-  });
-  if(toggled)schedule();
- });
+ const screens=new MutationObserver(records=>{if(records.some(r=>(r.oldValue||'').split(' ').includes('active')!==r.target.classList.contains('active')))schedule();});
  document.querySelectorAll('.screen').forEach(el=>screens.observe(el,{attributes:true,attributeOldValue:true,attributeFilter:['class']}));
  schedule();
 }
 setupScrollHints();
-
-/* 3.1.3.6: sticky topbar — the gear stays fixed; the headline shrinks to icon height on scroll. */
-function setupCollapsingHeader(){
- const topbar=$('topbar'),wrap=$('headlineShrink');
- if(!topbar||!wrap)return;
- if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
- const COLLAPSED=50,DISTANCE=90;
- let expandedHeight=0,minScale=1,ticking=false;
- const measure=()=>{
-  wrap.style.transform='';wrap.style.height='';
-  expandedHeight=wrap.scrollHeight||1;
-  minScale=Math.max(COLLAPSED/expandedHeight,.32);
-  apply();
- };
- const apply=()=>{
-  const t=Math.max(0,Math.min(1,scrollY/DISTANCE));
-  const scale=1-(1-minScale)*t;
-  wrap.style.transform=`scale(${scale})`;
-  wrap.style.height=Math.round(expandedHeight*scale)+'px';
-  topbar.classList.toggle('is-condensed',t>0.06);
-  ticking=false;
- };
- addEventListener('scroll',()=>{if(!ticking){ticking=true;requestAnimationFrame(apply);}},{passive:true});
- addEventListener('resize',measure);
- measure();
-}
-setupCollapsingHeader();
 })();
-
