@@ -21,10 +21,10 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="MyRate">
   <title>My Rate — ВРЕМЯ — деньги · Какую цену платишь именно ТЫ?</title>
-  <link rel="icon" type="image/svg+xml" href="myrate-icon.svg?v=3.1.3.7">
-  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=3.1.3.7">
-  <link rel="manifest" href="manifest.webmanifest?v=3.1.3.7">
-  <link rel="stylesheet" href="styles.css?v=3.1.3.7">
+  <link rel="icon" type="image/svg+xml" href="myrate-icon.svg?v=3.1.3.5">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=3.1.3.5">
+  <link rel="manifest" href="manifest.webmanifest?v=3.1.3.5">
+  <link rel="stylesheet" href="styles.css?v=3.1.3.5">
 </head>
 <body>
   <div id="introScreen" class="intro-screen hidden" aria-live="polite" aria-label="MyRate. цифровой Арт объект. A PROBA experience. No doubt. Just PROBA.">
@@ -32,8 +32,8 @@
     <div class="intro-brand"><span class="intro-object">цифровой Арт объект</span><span class="intro-experience">A PROBA experience</span><strong>No doubt. Just <b>PROBA.</b></strong></div>
   </div>
   <main class="app" id="app">
-    <header class="topbar" id="topbar">
-      <div id="headlineShrink">
+    <header class="topbar">
+      <div>
         <div class="brand">MY RATE</div>
         <h1 id="mainTitle"><span class="headline-expression"><span class="headline-time">ВРЕМЯ</span> — деньги</span> <span class="headline-question">Какую цену платишь<br> именно <span class="wide-word">ТЫ?</span></span></h1>
       </div>
@@ -64,6 +64,15 @@
           <div class="field-block"><div class="label-row"><label for="days">Рабочих дней в неделю</label><button class="help-button" type="button" data-help="days" aria-label="Подсказка: рабочие дни">?</button></div><input id="days" class="number-input" inputmode="decimal" autocomplete="off" value="5" data-number="decimal" data-min="0.5" data-max="7" required aria-required="true"></div>
           <div class="field-block"><div class="label-row"><label for="hours">Часов в рабочем дне</label><button class="help-button" type="button" data-help="hours" aria-label="Подсказка: рабочие часы">?</button></div><input id="hours" class="number-input" inputmode="decimal" autocomplete="off" value="8" data-number="decimal" data-min="0.25" data-max="24" required aria-required="true"></div>
         </div>
+        <details id="assumptionsBlock" class="assumptions">
+          <summary id="assumptionsSummary">Как считается</summary>
+          <p class="assumptions-note">Эти значения уже применены. Менять не обязательно.</p>
+          <div class="two-columns">
+            <div class="field-block"><div class="label-row"><label for="taxRate">Налог, %</label><button class="help-button" type="button" data-help="taxRate" aria-label="Подсказка: налог">?</button></div><input id="taxRate" class="number-input" inputmode="decimal" autocomplete="off" value="13" data-number="decimal" data-min="0" data-max="60"></div>
+            <div class="field-block"><div class="label-row"><label for="vacationDays">Отпуск, дней в году</label><button class="help-button" type="button" data-help="vacationDays" aria-label="Подсказка: отпуск">?</button></div><input id="vacationDays" class="number-input" inputmode="decimal" autocomplete="off" value="28" data-number="decimal" data-min="0" data-max="200"></div>
+          </div>
+          <div class="field-block"><div class="label-row"><label for="commuteHours">Дорога, часов в день</label><button class="help-button" type="button" data-help="commuteHours" aria-label="Подсказка: дорога">?</button></div><input id="commuteHours" class="number-input" inputmode="decimal" autocomplete="off" value="0" data-number="decimal" data-min="0" data-max="12"></div>
+        </details>
         <p id="profilePrivacy" class="privacy-note"></p>
         <button id="saveProfile" class="button primary wide" type="button" disabled>Всё, считаем</button>
       </section>
@@ -87,7 +96,7 @@
           <div id="currentUnitPicker" class="field-block result-wheel-block hidden"><div class="label-row wheel-field-label centered"><span>Показать стоимость в…</span><button class="help-button" type="button" data-help="unit" aria-label="Подсказка: единицы результата">?</button></div><div class="wheel unit-wheel" data-wheel="unit" aria-label="Единицы результата"></div></div>
           <div id="itemsList" class="items-list"></div>
         </section>
-        <section id="totalCard" class="surface total-card hidden"><div class="total-label">Всё вместе стоит тебе</div><div id="totalValue" class="total-number">—</div><div id="totalMoney" class="total-meta"></div></section>
+        <section id="totalCard" class="surface total-card hidden"><div class="total-price-row"><span class="total-label">Цена общая</span><span id="totalMoney" class="total-price total-meta"></span></div><div class="total-label">Всё вместе стоит тебе</div><div id="totalValue" class="total-number">—</div><div id="totalEquivalents" class="total-equivalents"></div><div id="totalAssumptions" class="total-assumptions"></div></section>
         <div id="multipleHint" class="inline-hint hidden" role="status"><strong>Ого. Кажется, намечается Большой план.</strong><span>Можно оставить всё вместе, разложить по карточкам или сразу собрать план.</span></div>
         <button id="saveCalculation" class="button primary bookmark-button wide hidden" type="button">Добавить в избранное</button>
       </section>
@@ -99,7 +108,7 @@
       <div id="favoriteDetailView" class="hidden">
         <div class="detail-toolbar"><button id="favoriteBack" class="back-button" type="button">← Назад</button><button id="favoriteDetailMenu" class="dots-button" type="button" aria-label="Действия с карточкой">•••</button></div>
         <section class="surface detail-surface"><div class="kicker" id="favoriteDetailMeta"></div><h3 id="favoriteDetailTitle" class="detail-title">—</h3><div class="field-block result-wheel-block"><div class="label-row wheel-field-label centered"><span>Показать стоимость в…</span></div><div class="wheel unit-wheel" data-wheel="favoriteUnit" aria-label="Единицы результата сохранённой карточки"></div></div><div id="favoriteDetailItems" class="items-list"></div></section>
-        <section id="favoriteDetailTotalCard" class="surface total-card hidden"><div class="total-label">Всё вместе стоит тебе</div><div id="favoriteDetailTotal" class="total-number">—</div><div id="favoriteDetailMoney" class="total-meta"></div></section>
+        <section id="favoriteDetailTotalCard" class="surface total-card hidden"><div class="total-price-row"><span class="total-label">Цена общая</span><span id="favoriteDetailMoney" class="total-price total-meta"></span></div><div class="total-label">Всё вместе стоит тебе</div><div id="favoriteDetailTotal" class="total-number">—</div><div id="favoriteDetailEquivalents" class="total-equivalents"></div><div id="favoriteDetailAssumptions" class="total-assumptions"></div></section>
       </div>
     </section>
 
@@ -109,7 +118,7 @@
       <div id="projectDetailView" class="hidden">
         <div class="detail-toolbar"><button id="projectBack" class="back-button" type="button">← Назад</button><button id="projectDetailMenu" class="dots-button" type="button" aria-label="Действия с большим планом">•••</button></div>
         <section class="surface detail-surface"><div class="kicker" id="projectDetailMeta"></div><h3 id="projectDetailTitle" class="detail-title">—</h3><div class="field-block result-wheel-block"><div class="label-row wheel-field-label centered"><span>Показать стоимость в…</span></div><div class="wheel unit-wheel" data-wheel="projectUnit" aria-label="Единицы результата большого плана"></div></div><div id="projectDetailGroups"></div></section>
-        <section id="projectDetailTotalCard" class="surface total-card hidden"><div class="total-label">Всё вместе стоит тебе</div><div id="projectDetailTotal" class="total-number">—</div><div id="projectDetailMoney" class="total-meta"></div></section>
+        <section id="projectDetailTotalCard" class="surface total-card hidden"><div class="total-price-row"><span class="total-label">Цена общая</span><span id="projectDetailMoney" class="total-price total-meta"></span></div><div class="total-label">Всё вместе стоит тебе</div><div id="projectDetailTotal" class="total-number">—</div><div id="projectDetailEquivalents" class="total-equivalents"></div><div id="projectDetailAssumptions" class="total-assumptions"></div></section>
       </div>
     </section>
 
@@ -123,7 +132,7 @@
       <section class="surface settings-list">
         <button id="editProfile" class="settings-row" type="button"><span><strong>Подкрутить мой рабочий ритм</strong><small>Сумма, период и рабочий график</small></span><span>›</span></button>
         <button id="restartTour" class="settings-row" type="button"><span><strong>Пройти знакомство заново</strong><small>Семь коротких историй с примерами</small></span><span>›</span></button>
-        <label class="settings-row toggle-row"><span><strong>Магия пересчёта</strong><small>Пауза, движение и мягкое появление</small></span><input id="magicToggle" type="checkbox" checked><span class="toggle" aria-hidden="true"></span></label>
+        <label class="settings-row toggle-row"><span><strong>Движение цифр</strong><small>Цифра встаёт на место, а не появляется</small></span><input id="magicToggle" type="checkbox" checked><span class="toggle" aria-hidden="true"></span></label>
         <label class="settings-row toggle-row"><span><strong>Шутки и реплики</strong><small>Чтобы цифры не становились слишком важными</small></span><input id="jokesToggle" type="checkbox" checked><span class="toggle" aria-hidden="true"></span></label>
         <button id="updateAllFx" class="settings-row" type="button"><span><strong>Обновить курсы во всём приложении</strong><small>Только после подтверждения</small></span><span>›</span></button>
         <button class="settings-row" type="button" data-open-archive="calculations"><span><strong>Архив</strong><small>Карточки и большие планы на паузе</small></span><span>›</span></button>
@@ -185,6 +194,6 @@
   </div>
   <div id="dialogLayer" class="dialog-layer hidden" role="presentation"><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialogTitle"><button id="dialogClose" class="dialog-close" type="button" aria-label="Закрыть">×</button><h3 id="dialogTitle"></h3><div id="dialogText" class="dialog-text"></div><div id="dialogBody"></div><div id="dialogActions" class="dialog-actions"></div></section></div>
   <div id="sheetLayer" class="sheet-layer hidden" role="presentation"><section class="action-sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle"><h3 id="sheetTitle"></h3><div id="sheetActions" class="sheet-actions"></div><button id="sheetCancel" class="sheet-cancel" type="button">Отмена</button></section></div>
-  <script src="config.js?v=3.1.3.7"></script><script src="storage.js?v=3.1.3.7"></script><script src="calculator.js?v=3.1.3.7"></script><script src="collections.js?v=3.1.3.7"></script><script src="interface.js?v=3.1.3.7"></script><script src="app.js?v=3.1.3.7"></script>
+  <script src="config.js?v=3.1.3.5"></script><script src="storage.js?v=3.1.3.5"></script><script src="calculator.js?v=3.1.3.5"></script><script src="collections.js?v=3.1.3.5"></script><script src="interface.js?v=3.1.3.5"></script><script src="app.js?v=3.1.3.5"></script>
 </body>
 </html>

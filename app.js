@@ -33,7 +33,9 @@ function toast(text,key) {
 async function magic(key, fn) {
   if(busy) return false;
   busy=true; updateFormButtons();
-  const overlay=$('magicOverlay'),animated=state.settings.magic&&!matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // Ожидание показываем только там, где оно настоящее: запрос курса валют.
+  // Локальный пересчёт мгновенный — цифра просто встаёт на место.
+  const overlay=$('magicOverlay'),animated=key==='fx'&&state.settings.magic&&!matchMedia('(prefers-reduced-motion: reduce)').matches;
   const locked=[$('app'),$('bottomNav')],before=locked.map(el=>el.inert);
   locked.forEach(el=>el.inert=true);$('app').setAttribute('aria-busy','true');
   try {
@@ -308,8 +310,14 @@ function previewWheel(name,value){wheelValues[name]=value;renderWheel(name)}
 function selectWheel(name,value,fire=false){wheelValues[name]=value;wheelDefs[name].committedValue=value;renderWheel(name);if(fire)wheelDefs[name].onChange?.(value)}
 function bindWheelGesture(root,name){if(root.dataset.gestureBound)return;root.dataset.gestureBound='1';let holdTimer,startY=0,lastY=0,offset=0,active=false;const shift=direction=>{const a=wheelDefs[name].entries,i=a.findIndex(x=>x[0]===wheelValues[name]),next=(i+direction+a.length)%a.length;root.dataset.offset=String(offset);previewWheel(name,a[next][0])};const activate=()=>{root.classList.remove('is-demonstrating');active=true;clearTimeout(wheelDefs[name].commitTimer);root.classList.remove('is-settling');root.classList.add('is-active');try{navigator.vibrate?.(6)}catch{};paintWheel(root)};const finish=()=>{clearTimeout(holdTimer);if(!active)return;active=false;if(offset<=-21){offset+=42;shift(1)}else if(offset>=21){offset-=42;shift(-1)}root.dataset.offset=String(offset);settleWheel(name);offset=0};root.addEventListener('contextmenu',e=>e.preventDefault());root.addEventListener('touchstart',e=>{if(e.touches.length!==1)return;startY=lastY=e.touches[0].clientY;offset=Number(root.dataset.offset||0);active=false;clearTimeout(holdTimer);holdTimer=setTimeout(activate,C.wheelHoldMs)},{passive:true});root.addEventListener('touchmove',e=>{if(e.touches.length!==1)return;const y=e.touches[0].clientY;if(!active){if(Math.abs(y-startY)>8)clearTimeout(holdTimer);return}e.preventDefault();if(!root.classList.contains('is-dragging'))root.classList.add('is-dragging');offset+=y-lastY;lastY=y;while(offset<=-42){offset+=42;shift(1)}while(offset>=42){offset-=42;shift(-1)}root.dataset.offset=String(offset);paintWheel(root)},{passive:false});root.addEventListener('touchend',finish,{passive:true});root.addEventListener('touchcancel',finish,{passive:true});root.addEventListener('wheel',e=>{e.preventDefault();const a=wheelDefs[name].entries,i=a.findIndex(x=>x[0]===wheelValues[name]),next=(i+(e.deltaY>0?1:-1)+a.length)%a.length;previewWheel(name,a[next][0]);settleWheel(name)},{passive:false});root.addEventListener('keydown',e=>{if(!['ArrowUp','ArrowDown'].includes(e.key))return;e.preventDefault();const a=wheelDefs[name].entries,i=a.findIndex(x=>x[0]===wheelValues[name]),next=(i+(e.key==='ArrowDown'?1:-1)+a.length)%a.length;previewWheel(name,a[next][0]);settleWheel(name)})}
 
-function profileFromForm(){return{income:num('income'),currency:wheelValues.incomeCurrency,period:wheelValues.period,days:num('days'),hours:num('hours')}}
-function fillProfile(p){if(!p)return;$('income').value=p.income;$('days').value=p.days;$('hours').value=p.hours;selectWheel('incomeCurrency',p.currency);selectWheel('period',p.period);updateFormButtons()}
+function assumptionNum(id,fallback){const el=$(id);if(!el)return fallback;const raw=String(el.value??'').trim();if(!raw)return fallback;const value=Number(raw.replace(',','.'));return Number.isFinite(value)?value:fallback}
+function profileFromForm(){const d=C.assumptions||{taxRate:13,vacationDays:28,commuteHours:0};return{income:num('income'),currency:wheelValues.incomeCurrency,period:wheelValues.period,days:num('days'),hours:num('hours'),taxRate:assumptionNum('taxRate',d.taxRate),vacationDays:assumptionNum('vacationDays',d.vacationDays),commuteHours:assumptionNum('commuteHours',d.commuteHours)}}
+function fillProfile(p){if(!p)return;const n=Calc.normalizeProfile(p);$('income').value=p.income;$('days').value=p.days;$('hours').value=p.hours;if($('taxRate'))$('taxRate').value=n.taxRate;if($('vacationDays'))$('vacationDays').value=n.vacationDays;if($('commuteHours'))$('commuteHours').value=n.commuteHours;selectWheel('incomeCurrency',p.currency);selectWheel('period',p.period);updateFormButtons()}
+// Строка допущений под результатом: цифру можно оспорить, значит ей можно верить.
+function assumptionsLine(profileSource){const d=Calc.rateDetails(profileSource);if(!(d.rate>0))return '';const parts=['ставка '+Calc.money(Math.round(d.rate),d.currency)+'/ч'];parts.push(d.taxRate>0?'налог '+Calc.formatNumber(d.taxRate,1)+'%':'без налога');parts.push(d.vacationDays>0?'отпуск '+Calc.formatNumber(d.vacationDays,0)+' дн.':'без отпуска');parts.push(d.commuteHours>0?'дорога '+Calc.formatNumber(d.commuteHours,1)+' ч/день':'дорога не учтена');return parts.join(' · ')}
+// Одно движение: разряды доходят до значения и замирают.
+function settleNumber(el){if(!el||!state.settings.magic||matchMedia('(prefers-reduced-motion: reduce)').matches)return;el.classList.remove('is-settling');void el.offsetWidth;el.classList.add('is-settling');setTimeout(()=>el.classList.remove('is-settling'),C.digitSettleMs||520)}
+function paintTotal(ids,hours,profileSource,unit){const eq=$(ids.equivalents),as=$(ids.assumptions);if(eq)eq.textContent=Calc.equivalentsLine(hours,profileSource,unit);if(as)as.textContent=assumptionsLine(profileSource)}
 async function fetchFx(base,force=false) {
   if(!force&&state.fx?.base===base&&Date.now()-state.fx.savedAt<C.fxMaxAgeMs)return clone(state.fx);
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),10000);
@@ -391,7 +399,7 @@ function renderCurrent() {
   if(!n)$('itemsList').innerHTML=empty('Пока здесь тихо.','Добавь первую хотелку — посмотрим, сколько времени она задумала съесть.');
   else renderItemList($('itemsList'),items,state.profile,state.fx,unit,true);
   const total=summaryOfItems(items);$('totalCard').classList.toggle('hidden',n<2);
-  if(n>=2){$('totalValue').textContent=Calc.smart(Calc.unitValue(total.hours,unit,state.profile),unit);$('totalMoney').textContent=Number.isFinite(total.money)?'≈ '+Calc.money(total.money,state.profile.currency):'';}
+  if(n>=2){settleNumber($('totalValue'));$('totalValue').textContent=Calc.smart(Calc.unitValue(total.hours,unit,state.profile),unit);$('totalMoney').textContent=Number.isFinite(total.money)?'≈ '+Calc.money(total.money,state.profile.currency):'';paintTotal({equivalents:'totalEquivalents',assumptions:'totalAssumptions'},total.hours,state.profile,unit);}
   updateFormButtons();updateWheelHelp();
 }
 async function addItem() {
@@ -458,7 +466,7 @@ function openFavorite(id,origin='Favorites') {
   selectWheel('favoriteUnit',c.displayUnit||'hours');renderFavoriteDetail();scrollTo({top:0});updateWheelHelp();
 }
 function closeFavorite(){$('favoriteDetailView').classList.add('hidden');$('favoritesListView').classList.remove('hidden');openedFavorite=null;renderFavorites()}
-function renderFavoriteDetail(){const c=find(state.calculations,openedFavorite);if(!c)return;const u=c.displayUnit||'hours',s=Calc.calculationSummary(c);$('favoriteDetailTitle').textContent=c.title;$('favoriteDetailMeta').textContent=`${date(c.createdAt)} · ${c.items.length} поз.`;renderItemList($('favoriteDetailItems'),c.items,c.profile,c.fx,u);$('favoriteDetailTotalCard').classList.toggle('hidden',c.items.length<2);if(c.items.length>=2){$('favoriteDetailTotal').textContent=Calc.smart(Calc.unitValue(s.hours,u,c.profile),u);$('favoriteDetailMoney').textContent=Calc.money(s.money,c.profile.currency)}}
+function renderFavoriteDetail(){const c=find(state.calculations,openedFavorite);if(!c)return;const u=c.displayUnit||'hours',s=Calc.calculationSummary(c);$('favoriteDetailTitle').textContent=c.title;$('favoriteDetailMeta').textContent=`${date(c.createdAt)} · ${c.items.length} поз.`;renderItemList($('favoriteDetailItems'),c.items,c.profile,c.fx,u);$('favoriteDetailTotalCard').classList.toggle('hidden',c.items.length<2);if(c.items.length>=2){$('favoriteDetailTotal').textContent=Calc.smart(Calc.unitValue(s.hours,u,c.profile),u);$('favoriteDetailMoney').textContent=Calc.money(s.money,c.profile.currency);paintTotal({equivalents:'favoriteDetailEquivalents',assumptions:'favoriteDetailAssumptions'},s.hours,c.profile,u)}}
 
 async function renameCalc(c){const name=await ask('Переименовать','Как теперь назвать эту карточку?',c.title);if(!name)return;c.title=name;c.updatedAt=stamp();state.projects.forEach(p=>p.calculations.filter(x=>x.sourceId===c.id).forEach(x=>x.title=name));if(!save())return;renderAll();toast(null,'renamed')}
 async function editCalc(c, projectId=null) {
@@ -517,7 +525,7 @@ function openProject(id,origin='Projects') {
   selectWheel('projectUnit',p.displayUnit||'hours');renderProjectDetail();scrollTo({top:0});updateWheelHelp();
 }
 function closeProject(){$('projectDetailView').classList.add('hidden');$('projectsListView').classList.remove('hidden');openedProject=null;renderProjects()}
-function renderProjectDetail(){const p=find(state.projects,openedProject);if(!p)return;const u=p.displayUnit||'hours',s=Calc.projectSummary(p),first=p.calculations[0]?.profile||state.profile;$('projectDetailTitle').textContent=p.title;$('projectDetailMeta').textContent=`${date(p.createdAt)} · ${p.calculations.length} карточек`;$('projectDetailGroups').innerHTML='';p.calculations.forEach(c=>{const cs=Calc.calculationSummary(c),g=document.createElement('div');g.className='group-card';g.innerHTML=`<div class="group-title"></div><div class="item-meta"></div><div class="group-total">${Calc.smart(Calc.unitValue(cs.hours,u,c.profile),u)}</div>`;g.querySelector('.group-title').textContent=c.title;g.querySelector('.item-meta').textContent=c.items.map(x=>x.name).join(' · ');const edit=document.createElement('button');edit.type='button';edit.className='dots-button';edit.setAttribute('aria-label','Действия: '+c.title);edit.innerHTML=U.icon('more');edit.onclick=()=>sheet(c.title,[{label:'Изменить детали',run:()=>editCalc(c,p.id)}]);g.append(edit);$('projectDetailGroups').append(g)});$('projectDetailTotalCard').classList.toggle('hidden',p.calculations.length<2);if(p.calculations.length>=2){$('projectDetailTotal').textContent=Calc.smart(projectTime(p,u),u);const same=p.calculations.every(c=>c.profile?.currency===first.currency);$('projectDetailMoney').textContent=same?Calc.money(s.money,first.currency):''}}
+function renderProjectDetail(){const p=find(state.projects,openedProject);if(!p)return;const u=p.displayUnit||'hours',s=Calc.projectSummary(p),first=p.calculations[0]?.profile||state.profile;$('projectDetailTitle').textContent=p.title;$('projectDetailMeta').textContent=`${date(p.createdAt)} · ${p.calculations.length} карточек`;$('projectDetailGroups').innerHTML='';p.calculations.forEach(c=>{const cs=Calc.calculationSummary(c),g=document.createElement('div');g.className='group-card';g.innerHTML=`<div class="group-title"></div><div class="item-meta"></div><div class="group-total">${Calc.smart(Calc.unitValue(cs.hours,u,c.profile),u)}</div>`;g.querySelector('.group-title').textContent=c.title;g.querySelector('.item-meta').textContent=c.items.map(x=>x.name).join(' · ');const edit=document.createElement('button');edit.type='button';edit.className='dots-button';edit.setAttribute('aria-label','Действия: '+c.title);edit.innerHTML=U.icon('more');edit.onclick=()=>sheet(c.title,[{label:'Изменить детали',run:()=>editCalc(c,p.id)}]);g.append(edit);$('projectDetailGroups').append(g)});$('projectDetailTotalCard').classList.toggle('hidden',p.calculations.length<2);if(p.calculations.length>=2){$('projectDetailTotal').textContent=Calc.smart(projectTime(p,u),u);const same=p.calculations.every(c=>c.profile?.currency===first.currency);$('projectDetailMoney').textContent=same?Calc.money(s.money,first.currency):'';paintTotal({equivalents:'projectDetailEquivalents',assumptions:'projectDetailAssumptions'},s.hours,first,u)}}
 async function renameProject(p){const n=await ask('Переименовать','Как теперь назвать этот большой план?',p.title,'project');if(!n)return;p.title=n;p.updatedAt=stamp();if(!save())return;renderAll();toast(null,'renamed')}
 async function rebuildProject(p) {
   const body=document.createElement('div');body.className='picker-list';
@@ -831,7 +839,7 @@ $('saveProfile').onclick=saveProfile;$('addItem').onclick=addItem;$('clearItems'
 $('cancelSelection').onclick=exitSelection;$('combineSelected').onclick=combine;$('clearFavorites').onclick=async()=>{const a=activeCalcs();if(!a.length)return;if(await confirm('Очистить всё «Избранное»?','Все карточки исчезнут из «Избранного». То, что уже входит в «Большие планы», останется внутри них.','Очистить')){state.calculations=state.calculations.filter(x=>x.status==='archived');if(!save())return;renderAll();toast(null,'deleted')}};
 $('clearProjects').onclick=async()=>{const a=activeProjects();if(!a.length)return;if(await confirm('Удалить все большие планы?','Активные планы будут удалены. Карточки в «Избранном» и содержимое Архива останутся на месте.','Удалить всё')){state.projects=state.projects.filter(x=>x.status==='archived');if(!save())return;renderAll();toast(null,'deleted')}};
 $('archiveBack').onclick=()=>switchScreen(previousScreen);document.querySelectorAll('[data-archive-tab]').forEach(b=>b.onclick=()=>{archiveTab=b.dataset.archiveTab;renderArchive()});
-{const gear=$('settingsButton'),leaveSettings=()=>switchScreen(previousScreen&&previousScreen!=='Settings'?previousScreen:'Current');let hold,x,y;gear.onpointerdown=e=>{x=e.clientX;y=e.clientY;hold=setTimeout(()=>{gear.dataset.held='1';sheet('Быстрые настройки',[{label:'Подкрутить мой рабочий ритм',run:()=>{$('editProfile').click()}},{label:state.settings.magic?'Убрать магию пересчёта':'Вернуть магию пересчёта',run:()=>{state.settings.magic=!state.settings.magic;if(!save())return;renderAll()}},{label:state.settings.jokes?'Убавить разговорчивость':'Вернуть шутки и реплики',run:()=>{state.settings.jokes=!state.settings.jokes;if(!save())return;renderAll()}},{label:'Что за магия?',run:()=>{previousScreen=currentScreen();switchScreen('Faq')}}])},C.cardHoldMs)};gear.onpointermove=e=>{if(Math.abs(e.clientX-x)>8||Math.abs(e.clientY-y)>8)clearTimeout(hold)};gear.onpointerup=gear.onpointercancel=()=>clearTimeout(hold);gear.onclick=()=>{if(gear.dataset.held){delete gear.dataset.held;return}if(currentScreen()==='Settings'){leaveSettings();return}previousScreen=currentScreen();switchScreen('Settings')};$('settingsBack').onclick=leaveSettings;}
+{const gear=$('settingsButton'),leaveSettings=()=>switchScreen(previousScreen&&previousScreen!=='Settings'?previousScreen:'Current');let hold,x,y;gear.onpointerdown=e=>{x=e.clientX;y=e.clientY;hold=setTimeout(()=>{gear.dataset.held='1';sheet('Быстрые настройки',[{label:'Подкрутить мой рабочий ритм',run:()=>{$('editProfile').click()}},{label:state.settings.magic?'Убрать движение цифр':'Вернуть движение цифр',run:()=>{state.settings.magic=!state.settings.magic;if(!save())return;renderAll()}},{label:state.settings.jokes?'Сухой тон':'Тон с характером',run:()=>{state.settings.jokes=!state.settings.jokes;if(!save())return;renderAll()}},{label:'Что за магия?',run:()=>{previousScreen=currentScreen();switchScreen('Faq')}}])},C.cardHoldMs)};gear.onpointermove=e=>{if(Math.abs(e.clientX-x)>8||Math.abs(e.clientY-y)>8)clearTimeout(hold)};gear.onpointerup=gear.onpointercancel=()=>clearTimeout(hold);gear.onclick=()=>{if(gear.dataset.held){delete gear.dataset.held;return}if(currentScreen()==='Settings'){leaveSettings();return}previousScreen=currentScreen();switchScreen('Settings')};$('settingsBack').onclick=leaveSettings;}
 $('openFaq').onclick=()=>{previousScreen='Settings';switchScreen('Faq')};$('faqBack').onclick=()=>switchScreen(previousScreen);
 $('magicToggle').onchange=e=>{state.settings.magic=e.target.checked;save()};$('jokesToggle').onchange=e=>{state.settings.jokes=e.target.checked;save()};$('updateAllFx').onclick=updateAllFx;
 
@@ -847,78 +855,29 @@ runIntro('launch');
 window.MyRateReady=true;
 if(S.warning)setTimeout(()=>toast(S.warning),6500);
 
-/* A gentle repeating hint on every visit to a long, unscrolled screen; any user interaction cancels it. */
+/* A single gentle hint after content changes; any user interaction cancels it. */
 function setupScrollHints(){
- const BOUNCES=4,PAUSE_MS=1100,BOUNCE_MS=1300,DELAY_MS=1800;
- let timer=0,loopTimer=0;
+ let timer=0,finishTimer=0;
  const shown=new Set();
  const active=()=>document.querySelector('.screen.active');
- const stop=(remember=false)=>{clearTimeout(timer);clearTimeout(loopTimer);const screen=active();if(screen){screen.classList.remove('scroll-cue');if(remember)shown.add(screen.id);}};
- const bounce=(screen,left)=>{
-  if(left<=0||!screen.classList.contains('active'))return;
-  screen.classList.remove('scroll-cue');void screen.offsetWidth;screen.classList.add('scroll-cue');
-  loopTimer=setTimeout(()=>{
-   screen.classList.remove('scroll-cue');
-   loopTimer=setTimeout(()=>bounce(screen,left-1),PAUSE_MS);
-  },BOUNCE_MS);
- };
+ const cancel=(remember=false)=>{clearTimeout(timer);clearTimeout(finishTimer);const screen=active();if(screen){screen.classList.remove('scroll-cue');if(remember)shown.add(screen.id);}};
  const schedule=()=>{
-  stop();const screen=active();if(!screen||shown.has(screen.id))return;
+  cancel();const screen=active();if(!screen||shown.has(screen.id))return;
   timer=setTimeout(()=>{
    if(document.hidden||introActive||storyRelease||meaningRelease||searchRelease||document.body.classList.contains('modal-open')||document.body.classList.contains('keyboard-open'))return;
    const visibleBottom=(window.visualViewport?.offsetTop||0)+(window.visualViewport?.height||innerHeight);
    if(screen.getBoundingClientRect().bottom<=visibleBottom+48)return;
-   shown.add(screen.id);bounce(screen,BOUNCES);
-  },DELAY_MS);
+   shown.add(screen.id);screen.classList.remove('scroll-cue');void screen.offsetWidth;screen.classList.add('scroll-cue');
+   finishTimer=setTimeout(()=>screen.classList.remove('scroll-cue'),1350);
+  },1800);
  };
- ['touchstart','pointerdown','wheel','keydown'].forEach(name=>document.addEventListener(name,()=>stop(true),{passive:true}));
- addEventListener('scroll',()=>stop(true),{passive:true});
+ ['touchstart','pointerdown','wheel','keydown'].forEach(name=>document.addEventListener(name,()=>cancel(true),{passive:true}));
+ addEventListener('scroll',()=>cancel(true),{passive:true});
  const observer=new MutationObserver(schedule);
  document.querySelectorAll('.screen').forEach(el=>observer.observe(el,{childList:true,subtree:true,characterData:true}));
- const screens=new MutationObserver(records=>{
-  let toggled=false;
-  records.forEach(r=>{
-   const wasActive=(r.oldValue||'').split(' ').includes('active'),isActive=r.target.classList.contains('active');
-   if(isActive===wasActive)return;
-   toggled=true;
-   if(isActive)shown.delete(r.target.id);
-  });
-  if(toggled)schedule();
- });
+ const screens=new MutationObserver(records=>{if(records.some(r=>(r.oldValue||'').split(' ').includes('active')!==r.target.classList.contains('active')))schedule();});
  document.querySelectorAll('.screen').forEach(el=>screens.observe(el,{attributes:true,attributeOldValue:true,attributeFilter:['class']}));
  schedule();
 }
 setupScrollHints();
-
-/* 3.1.3.6: sticky topbar — the gear stays fixed; the headline shrinks to icon height on scroll.
-   Only `transform: scale()` ever touches the phrase, so glyphs are never cropped mid-line;
-   the freed-up space is reclaimed with a negative margin instead of a forced pixel height,
-   so the sticky bar's own box always matches what's actually on screen (no torn seam). */
-function setupCollapsingHeader(){
- const topbar=$('topbar'),wrap=$('headlineShrink');
- if(!topbar||!wrap)return;
- if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
- const COLLAPSED=50,DISTANCE=90;
- let naturalHeight=0,minScale=1,ticking=false;
- const measure=()=>{
-  wrap.style.transform='';wrap.style.marginBottom='';
-  naturalHeight=wrap.offsetHeight||1;
-  minScale=Math.max(COLLAPSED/naturalHeight,.32);
-  apply();
- };
- const apply=()=>{
-  const t=Math.max(0,Math.min(1,scrollY/DISTANCE));
-  const scale=1-(1-minScale)*t;
-  wrap.style.transform=`scale(${scale})`;
-  wrap.style.marginBottom=(-(1-scale)*naturalHeight)+'px';
-  topbar.classList.toggle('is-condensed',t>0.06);
-  ticking=false;
- };
- addEventListener('scroll',()=>{if(!ticking){ticking=true;requestAnimationFrame(apply);}},{passive:true});
- addEventListener('resize',measure);
- document.fonts?.ready?.then(measure);
- measure();
-}
-setupCollapsingHeader();
 })();
-

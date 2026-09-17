@@ -1263,18 +1263,52 @@ body.search-open::before,body.stories-open::before,body.meaning-open::before { c
  .meaning-visual.is-entering .meaning-tag,.screen.scroll-cue{animation:none!important}
 }
 
-/* 3.1.3.6: sticky topbar — settings gear stays fixed, headline shrinks smoothly on scroll. */
-.topbar {
-  position: sticky;
-  top: env(safe-area-inset-top, 0px);
-  z-index: 40;
-  background: rgba(242,240,234,.92);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  transition: box-shadow .3s ease;
+/* ============================================================
+   3.2 · Витрина: холодная точность
+   Прямые углы, линии вместо теней, табличные цифры, много пустоты.
+   ============================================================ */
+:root {
+  --bg: #f4f3f0;
+  --surface: #fbfbfa;
+  --surface-strong: #fff;
+  --ink: #0d0d0c;
+  --muted: #6d6a65;
+  --line: #d8d5cf;
+  --soft: #eceae5;
+  --shadow: none;
+  --radius-xl: 2px;
+  --radius-lg: 2px;
+  --radius-md: 2px;
 }
-.topbar.is-condensed { box-shadow: 0 8px 22px rgba(17,17,15,.07); }
-#headlineShrink { transform-origin: top left; will-change: transform, margin-bottom; }
-@media(prefers-reduced-motion:reduce){
- #headlineShrink { transform: none !important; margin-bottom: 0 !important; }
+body { font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif; letter-spacing: -0.01em; }
+.surface { box-shadow: none; border: 1px solid var(--line); }
+.item-card, .group-card, .plan-card, .card, .sheet, .dialog { box-shadow: none; }
+input, .number-input, .wheel, .button { border-radius: 2px; }
+.number-input, .item-value, .group-total, .total-number, .total-price, .total-equivalents, .total-assumptions {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* Второй ценник: общая цена сверху мелко, личная — крупно. */
+.total-card { padding: clamp(20px, 6vw, 34px) clamp(16px, 5vw, 28px); text-align: center; }
+.total-price-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--line); margin-bottom: clamp(16px, 5vw, 28px); }
+.total-price-row .total-label { margin: 0; }
+.total-label { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.total-price { font-size: 13px; color: var(--ink); }
+.total-number { font-size: clamp(3rem, 19vw, 7.2rem); line-height: .92; letter-spacing: -0.045em; color: var(--action); margin: clamp(6px, 2vw, 12px) 0; }
+.total-equivalents { font-size: 12px; letter-spacing: .04em; color: var(--ink); }
+.total-assumptions { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 11px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.total-number.is-settling { animation: digit-settle .32s cubic-bezier(.2,.75,.25,1) both; }
+@keyframes digit-settle { from { opacity: .35; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* Блок «Как считается»: свёрнут по умолчанию, никого не останавливает. */
+.assumptions { border-top: 1px solid var(--line); margin-top: 18px; padding-top: 12px; }
+.assumptions > summary { cursor: pointer; list-style: none; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.assumptions > summary::-webkit-details-marker { display: none; }
+.assumptions > summary::after { content: " +"; }
+.assumptions[open] > summary::after { content: " −"; }
+.assumptions-note { margin: 10px 0 14px; font-size: 12px; color: var(--muted); }
+
+@media (prefers-reduced-motion: reduce) {
+  .total-number.is-settling { animation: none !important; }
 }

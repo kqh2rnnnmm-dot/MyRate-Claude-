@@ -6,15 +6,29 @@ window.MyRateCalculator = (() => {
     return Number.isFinite(number) ? number : fallback;
   }
 
+  function clamp(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+  }
+
+  // Допущения честной ставки. Это значения по умолчанию, а не вопросы:
+  // профиль по-прежнему спрашивает только сумму, период, дни и часы.
+  function assumptions() {
+    return cfg.assumptions || { taxRate: 13, vacationDays: 28, commuteHours: 0 };
+  }
+
   function normalizeProfile(source = {}) {
     source = source || {};
     const currencyMap = { '₽': 'RUB', '$': 'USD', '€': 'EUR', '₪': 'ILS', '£': 'GBP' };
+    const defaults = assumptions();
     return {
       income: finite(source.income),
       currency: currencyMap[source.currency] || source.currency || 'RUB',
       period: source.period || source.incomePeriod || 'month',
       days: finite(source.days ?? source.daysPerWeek, 5),
-      hours: finite(source.hours ?? source.hoursPerDay, 8)
+      hours: finite(source.hours ?? source.hoursPerDay, 8),
+      taxRate: clamp(finite(source.taxRate, defaults.taxRate), 0, 60),
+      vacationDays: clamp(finite(source.vacationDays, defaults.vacationDays), 0, 200),
+      commuteHours: clamp(finite(source.commuteHours, defaults.commuteHours), 0, 12)
     };
   }
 
@@ -26,14 +40,36 @@ window.MyRateCalculator = (() => {
     return profile.income;
   }
 
+  function monthlyNetIncome(profileSource) {
+    const profile = normalizeProfile(profileSource);
+    return monthlyIncome(profile) * (1 - profile.taxRate / 100);
+  }
+
+  function workdaysPerMonth(profileSource) {
+    const profile = normalizeProfile(profileSource);
+    return Math.max(0, profile.days * cfg.weeksPerYear - profile.vacationDays) / cfg.monthsPerYear;
+  }
+
+  // Проданное время: часы за столом плюс часы дороги.
   function monthlyHours(profileSource) {
     const profile = normalizeProfile(profileSource);
-    return profile.days * profile.hours * cfg.weeksPerYear / cfg.monthsPerYear;
+    return workdaysPerMonth(profile) * (profile.hours + profile.commuteHours);
   }
 
   function hourlyRate(profileSource) {
     const hours = monthlyHours(profileSource);
-    return hours > 0 ? monthlyIncome(profileSource) / hours : 0;
+    return hours > 0 ? monthlyNetIncome(profileSource) / hours : 0;
+  }
+
+  function rateDetails(profileSource) {
+    const profile = normalizeProfile(profileSource);
+    return {
+      rate: hourlyRate(profile),
+      taxRate: profile.taxRate,
+      vacationDays: profile.vacationDays,
+      commuteHours: profile.commuteHours,
+      currency: profile.currency
+    };
   }
 
   function toBase(amount, currency, profileSource, fx) {
@@ -106,12 +142,49 @@ window.MyRateCalculator = (() => {
     return new Intl.NumberFormat('ru-RU', { maximumFractionDigits: maxFraction }).format(Number(value));
   }
 
-  function smart(value, unit) {
+  function plural(number, forms) {
+    if (!Number.isInteger(number)) return forms[1];
+    const a = Math.abs(number) % 100, b = a % 10;
+    if (a > 10 && a < 20) return forms[2];
+    if (b > 1 && b < 5) return forms[1];
+    if (b === 1) return forms[0];
+    return forms[2];
+  }
+
+  function smartParts(value, unit) {
     const number = Number(value);
-    if (!Number.isFinite(number)) return 'Нужен курс валют';
+    if (!Number.isFinite(number)) return { number: '—', label: 'нужен курс валют', text: 'Нужен курс валют' };
     const absolute = Math.abs(number);
     const digits = unit === 'minutes' || absolute >= 100 ? 0 : absolute >= 10 ? 1 : 2;
-    return `${formatNumber(number, digits)} ${cfg.unitShort[unit] || ''}`.trim();
+    const formatted = formatNumber(number, digits);
+    const label = cfg.unitShort[unit] || '';
+    return { number: formatted, label, text: `${formatted} ${label}`.trim() };
+  }
+
+  function smart(value, unit) {
+    return smartParts(value, unit).text;
+  }
+
+  // Второй ценник словами: «26 рабочих дней · 1,2 рабочих месяца».
+  function equivalentsLine(hoursValue, profileSource, exclude = 'hours') {
+    const hours = finite(hoursValue, NaN);
+    if (!Number.isFinite(hours) || hours <= 0) return '';
+    const days = unitValue(hours, 'days', profileSource);
+    const months = unitValue(hours, 'months', profileSource);
+    const parts = [];
+    if (exclude !== 'days' && Number.isFinite(days) && days >= 1) {
+      const shown = days >= 10 ? Math.round(days) : Math.round(days * 10) / 10;
+      parts.push(formatNumber(shown, 1) + ' ' + plural(shown, ['рабочий день', 'рабочих дня', 'рабочих дней']));
+    }
+    if (exclude !== 'months' && Number.isFinite(months) && months >= 1) {
+      const shown = months >= 10 ? Math.round(months) : Math.round(months * 10) / 10;
+      parts.push(formatNumber(shown, 1) + ' ' + plural(shown, ['рабочий месяц', 'рабочих месяца', 'рабочих месяцев']));
+    }
+    if (!parts.length && exclude !== 'minutes') {
+      const minutes = Math.round(hours * 60);
+      parts.push(formatNumber(minutes, 0) + ' ' + plural(minutes, ['минута', 'минуты', 'минут']));
+    }
+    return parts.join(' · ');
   }
 
   function money(value, currency) {
@@ -126,15 +199,21 @@ window.MyRateCalculator = (() => {
   return {
     normalizeProfile,
     monthlyIncome,
+    monthlyNetIncome,
+    workdaysPerMonth,
     monthlyHours,
     hourlyRate,
+    rateDetails,
     toBase,
     itemSummary,
     calculationSummary,
     projectSummary,
     unitValue,
     formatNumber,
+    plural,
+    smartParts,
     smart,
+    equivalentsLine,
     money,
     isValidProfile
   };
